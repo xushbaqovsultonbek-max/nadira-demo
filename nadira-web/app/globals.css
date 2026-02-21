@@ -1,0 +1,843 @@
+/* ─────────────────────────────────────────────
+   Базовый сброс
+───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: #000;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100%;
+}
+
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea { font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+
+/* Скрытие скроллбара */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* ─────────────────────────────────────────────
+   CSS Custom Properties — responsive scaling
+   clamp(min, preferred, max)
+   preferred = viewport-relative value
+───────────────────────────────────────────── */
+:root {
+  /* Шрифты */
+  --font-2xs:  clamp(9px,  2.4vw, 11px);
+  --font-xs:   clamp(10px, 2.8vw, 12px);
+  --font-sm:   clamp(11px, 3.0vw, 13px);
+  --font-md:   clamp(13px, 3.5vw, 15px);
+  --font-lg:   clamp(15px, 4.0vw, 18px);
+  --font-xl:   clamp(18px, 4.8vw, 22px);
+  --font-2xl:  clamp(20px, 5.5vw, 26px);
+
+  /* Отступы */
+  --space-2xs: clamp(3px,  1.0vw,  5px);
+  --space-xs:  clamp(5px,  1.5vw,  8px);
+  --space-sm:  clamp(8px,  2.5vw, 12px);
+  --space-md:  clamp(12px, 3.2vw, 16px);
+  --space-lg:  clamp(16px, 4.2vw, 24px);
+  --space-xl:  clamp(20px, 5.0vw, 32px);
+
+  /* Touch targets — минимум 44px по WCAG */
+  --touch: 44px;
+
+  /* Навигация */
+  --nav-h: 60px;
+
+  /* Позиционирование оверлея на видеокарточке */
+  --overlay-side:          clamp(8px,  2.8vw, 14px);
+  --overlay-bottom-btns:   clamp(82px, 15vh, 135px);
+  --overlay-bottom-info:   clamp(80px, 15vh, 132px);
+  --overlay-bottom-banner: clamp(46px,  9vh,  72px);
+
+  /* Аватар */
+  --avatar-sm: clamp(30px, 8vw, 38px);
+
+  /* Иконки действий */
+  --icon-action: clamp(24px, 6.5vw, 28px);
+  --icon-nav:    clamp(22px, 5.8vw, 26px);
+}
+
+/* ─────────────────────────────────────────────
+   Анимации
+───────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes likebeat {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.45); }
+  60%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.like-anim { animation: likebeat 0.38s ease; }
+
+/* ─────────────────────────────────────────────
+   Видео лента — scroll snap
+───────────────────────────────────────────── */
+.feed-container {
+  height: 100svh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+}
+
+.video-card {
+  position: relative;
+  height: 100svh;
+  scroll-snap-align: start;
+  background: #000;
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────
+   Оверлей на видеокарточке — responsive позиции
+───────────────────────────────────────────── */
+
+/* Правая панель кнопок (лайк, комм, сохранить…) */
+.feed-right-actions {
+  position: absolute;
+  right: var(--overlay-side);
+  bottom: var(--overlay-bottom-btns);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 3.5vh, 22px);
+  z-index: 10;
+}
+
+/* Кнопка действия — touch target ≥ 44px */
+.feed-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: var(--space-xs);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.feed-action-count {
+  color: #fff;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  line-height: 1;
+}
+
+/* Нижний левый блок (аватар + имя + описание) */
+.feed-bottom-left {
+  position: absolute;
+  left: var(--overlay-side);
+  right: clamp(56px, 14vw, 76px);
+  bottom: var(--overlay-bottom-info);
+  z-index: 10;
+}
+
+.feed-user-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-2xs);
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.feed-avatar {
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
+  border-radius: 50%;
+  background: #8B5CF6;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+}
+
+.feed-username {
+  color: #fff;
+  font-size: var(--font-md);
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.feed-subscribe-btn {
+  border: 1.5px solid #fff;
+  border-radius: 6px;
+  padding: 4px clamp(7px, 2vw, 12px);
+  background: transparent;
+  color: #fff;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: var(--touch);
+  display: flex;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.feed-views {
+  color: rgba(255,255,255,0.65);
+  font-size: var(--font-xs);
+  margin-left: calc(var(--avatar-sm) + var(--space-sm));
+  display: block;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  margin-top: var(--space-2xs);
+}
+
+.feed-description {
+  color: rgba(255,255,255,0.85);
+  font-size: var(--font-sm);
+  margin-top: var(--space-xs);
+  line-height: 1.45;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Баннер ссылки на товар */
+.feed-product-banner {
+  position: absolute;
+  left: var(--overlay-side);
+  bottom: var(--overlay-bottom-banner);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: rgba(255,230,0,0.15);
+  border: 1px solid rgba(255,230,0,0.4);
+  border-radius: 10px;
+  padding: var(--space-xs) clamp(10px, 3vw, 16px);
+  text-decoration: none;
+  max-width: 65%;
+  min-height: var(--touch);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.feed-product-text {
+  color: #FFE600;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────
+   Нижняя навигация
+───────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-h);
+  /* Safe area inset для iPhone с чёлкой */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #000;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: var(--space-xs);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-upload-btn {
+  width: clamp(40px, 11vw, 48px);
+  height: clamp(40px, 11vw, 48px);
+  border-radius: clamp(10px, 2.8vw, 14px);
+  background: #FFE600;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Страница загрузки
+───────────────────────────────────────────── */
+.upload-page {
+  height: 100svh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Центрирование на планшетах */
+.upload-inner {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.upload-header {
+  display: flex;
+  align-items: center;
+  padding: clamp(48px, 12svh, 62px) var(--space-md) var(--space-md);
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.upload-back-btn {
+  background: rgba(255,255,255,0.08);
+  border: none;
+  border-radius: 10px;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  color: #fff;
+  font-size: var(--font-lg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.upload-title {
+  color: #fff;
+  font-size: var(--font-xl);
+  font-weight: 700;
+}
+
+.upload-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--space-md) var(--space-xl);
+}
+
+/* Drag & drop зона */
+.drop-zone {
+  border: 2px dashed rgba(255,255,255,0.25);
+  border-radius: 16px;
+  transition: border-color 0.2s, background 0.2s;
+  height: clamp(180px, 42vw, 240px);
+  margin-bottom: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+}
+
+.drop-zone.drag-over {
+  border-color: #FFE600;
+  background: rgba(255, 230, 0, 0.06);
+}
+
+.drop-zone-icon {
+  width: clamp(56px, 15vw, 72px);
+  height: clamp(56px, 15vw, 72px);
+  border-radius: 50%;
+  background: rgba(255,230,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(22px, 6vw, 32px);
+}
+
+.drop-zone-title {
+  color: #fff;
+  font-size: var(--font-lg);
+  font-weight: 700;
+}
+
+.drop-zone-sub {
+  color: rgba(255,255,255,0.45);
+  font-size: var(--font-sm);
+}
+
+.drop-zone-hint {
+  color: rgba(255,255,255,0.3);
+  font-size: var(--font-xs);
+}
+
+/* Превью видео */
+.upload-preview {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: var(--space-lg);
+  background: #111;
+}
+
+.upload-preview video {
+  width: 100%;
+  height: clamp(200px, 45vw, 300px);
+  object-fit: cover;
+  display: block;
+}
+
+.upload-preview-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.65);
+  border: none;
+  border-radius: 50%;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  color: #fff;
+  font-size: var(--font-lg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-preview-meta {
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.6);
+  font-size: var(--font-xs);
+}
+
+/* Форма */
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.upload-label {
+  color: rgba(255,255,255,0.5);
+  font-size: var(--font-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.upload-label-opt {
+  color: rgba(255,255,255,0.3);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--font-xs);
+}
+
+.upload-input,
+.upload-textarea {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  color: #fff;
+  font-size: var(--font-md);
+  padding: clamp(10px, 3vw, 14px);
+  outline: none;
+  box-sizing: border-box;
+  min-height: var(--touch);
+  -webkit-appearance: none;
+}
+
+.upload-textarea {
+  resize: none;
+  height: clamp(96px, 22vw, 120px);
+  vertical-align: top;
+}
+
+.upload-input-icon-wrap {
+  position: relative;
+}
+
+.upload-input-icon-wrap .upload-input {
+  padding-left: clamp(34px, 9vw, 42px);
+}
+
+.upload-input-icon {
+  position: absolute;
+  left: clamp(10px, 3vw, 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: clamp(14px, 3.8vw, 18px);
+  pointer-events: none;
+}
+
+.upload-char-count {
+  color: rgba(255,255,255,0.3);
+  font-size: var(--font-xs);
+  text-align: right;
+  margin-top: var(--space-2xs);
+}
+
+.upload-url-cleaned {
+  color: #FFE600;
+  font-size: var(--font-xs);
+  margin-top: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+/* Блок ошибки */
+.upload-error {
+  background: rgba(255,45,85,0.12);
+  border: 1px solid rgba(255,45,85,0.35);
+  border-radius: 10px;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  color: #ff2d55;
+  font-size: var(--font-sm);
+  animation: fadeIn 0.2s ease;
+}
+
+/* Прогресс загрузки */
+.upload-progress-wrap {
+  margin-bottom: var(--space-md);
+}
+
+.upload-progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-xs);
+}
+
+.upload-progress-label {
+  color: rgba(255,255,255,0.6);
+  font-size: var(--font-sm);
+}
+
+.upload-progress-pct {
+  color: #FFE600;
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.upload-progress-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: #FFE600;
+  border-radius: 4px;
+  transition: width 0.2s ease;
+}
+
+/* Кнопка публикации */
+.upload-submit-btn {
+  width: 100%;
+  padding: clamp(14px, 4vw, 18px) 0;
+  border-radius: 14px;
+  border: none;
+  font-size: var(--font-lg);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  transition: opacity 0.2s;
+  min-height: var(--touch);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.upload-submit-btn.active {
+  background: #FFE600;
+  color: #000;
+}
+
+.upload-submit-btn.disabled {
+  background: rgba(255,230,0,0.25);
+  color: rgba(0,0,0,0.4);
+  cursor: not-allowed;
+}
+
+/* Экран успеха */
+.upload-success {
+  height: 100svh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.upload-success-icon {
+  width: clamp(60px, 16vw, 80px);
+  height: clamp(60px, 16vw, 80px);
+  border-radius: 50%;
+  background: rgba(255,230,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(28px, 8vw, 40px);
+  animation: scaleIn 0.3s ease;
+}
+
+/* ─────────────────────────────────────────────
+   Контекстное меню
+───────────────────────────────────────────── */
+.context-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.45);
+}
+
+.context-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 201;
+  background: #1a1a1a;
+  border-radius: 20px 20px 0 0;
+  padding: 0 0 clamp(16px, 5vw, 28px);
+  animation: slideUp 0.22s ease;
+  /* Safe area для iPhone */
+  padding-bottom: max(clamp(16px, 5vw, 28px), env(safe-area-inset-bottom, 0px));
+}
+
+.context-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  margin: 10px auto 14px;
+}
+
+.context-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: clamp(12px, 3.5vw, 16px) var(--space-lg);
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: var(--font-md);
+  cursor: pointer;
+  text-align: left;
+  min-height: var(--touch);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.context-menu-btn.close {
+  color: rgba(255,255,255,0.4);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin-top: 4px;
+}
+
+.context-menu-icon {
+  font-size: clamp(18px, 5vw, 22px);
+  width: clamp(24px, 6vw, 30px);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Пустые состояния и загрузчик
+───────────────────────────────────────────── */
+.empty-state {
+  height: 100svh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: 0 var(--space-xl);
+  text-align: center;
+}
+
+.empty-state-emoji {
+  font-size: clamp(44px, 12vw, 64px);
+}
+
+.empty-state-title {
+  color: #fff;
+  font-size: var(--font-xl);
+  font-weight: 700;
+}
+
+.empty-state-sub {
+  color: rgba(255,255,255,0.5);
+  font-size: var(--font-md);
+}
+
+.empty-state-btn {
+  margin-top: var(--space-xs);
+  background: #FFE600;
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  padding: clamp(11px, 3vw, 14px) clamp(24px, 8vw, 36px);
+  font-size: var(--font-lg);
+  font-weight: 700;
+  cursor: pointer;
+  min-height: var(--touch);
+}
+
+.loading-spinner {
+  width: clamp(30px, 8vw, 40px);
+  height: clamp(30px, 8vw, 40px);
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.15);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ─────────────────────────────────────────────
+   Toast уведомление
+───────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  top: clamp(48px, 12svh, 64px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(28,28,28,0.96);
+  color: #fff;
+  padding: clamp(8px, 2.5vw, 12px) clamp(14px, 4vw, 22px);
+  border-radius: 10px;
+  font-size: var(--font-sm);
+  z-index: 9999;
+  white-space: nowrap;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  animation: fadeIn 0.2s ease;
+}
+
+/* ─────────────────────────────────────────────
+   Media Queries
+───────────────────────────────────────────── */
+
+/* Маленькие телефоны < 360px */
+@media (max-width: 359px) {
+  :root {
+    --overlay-side:          6px;
+    --overlay-bottom-btns:   clamp(75px, 14vh, 120px);
+    --overlay-bottom-info:   clamp(73px, 14vh, 118px);
+    --overlay-bottom-banner: clamp(42px,  8vh,  64px);
+    --avatar-sm:             28px;
+  }
+
+  .feed-subscribe-btn {
+    display: none; /* скрываем кнопку на совсем маленьких экранах */
+  }
+
+  .upload-textarea {
+    height: 88px;
+  }
+}
+
+/* Нормальные телефоны 360–414px — стили по умолчанию */
+
+/* Большие телефоны 414–480px */
+@media (min-width: 414px) {
+  :root {
+    --overlay-bottom-btns:   clamp(100px, 17vh, 145px);
+    --overlay-bottom-info:   clamp(98px, 17vh, 142px);
+  }
+}
+
+/* Планшеты 768px+ */
+@media (min-width: 768px) {
+  :root {
+    --overlay-side:        24px;
+    --overlay-bottom-btns: 160px;
+    --overlay-bottom-info: 156px;
+    --overlay-bottom-banner: 88px;
+    --nav-h: 68px;
+    --avatar-sm: 42px;
+  }
+
+  /* Лента: ограничить ширину видео на планшете */
+  .feed-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  .video-card {
+    width: min(100%, 480px);
+    margin: 0 auto;
+  }
+
+  /* Форма загрузки центрирована */
+  .upload-scroll {
+    padding-left: max(var(--space-md), calc((100% - 480px) / 2));
+    padding-right: max(var(--space-md), calc((100% - 480px) / 2));
+  }
+
+  .drop-zone {
+    height: 260px;
+  }
+
+  .upload-preview video {
+    height: 320px;
+  }
+}
